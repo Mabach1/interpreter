@@ -22,7 +22,7 @@ impl Lexer {
 
     fn read_char(&mut self) {
         if self.read_pos >= self.input.len() {
-            self.ch = '\0';            
+            self.ch = '\0';
         } else {
             self.ch = self.input.chars().nth(self.read_pos).unwrap();
         }
@@ -60,16 +60,44 @@ impl Lexer {
         }
     }
 
+    fn peak_character(&self) -> char {
+        if self.read_pos >= self.input.len() {
+            return '\0';
+        } else {
+            return self.input.chars().nth(self.read_pos).unwrap();
+        }
+    }
+
     pub fn next_token(&mut self) -> token::Token {
         self.skip_whitespace();
 
         let res = match self.ch {
-            '=' => token::Token::new(token::TokenType::Assign, self.ch.to_string()),
+            '=' => {
+                if self.peak_character() == '=' {
+                    self.read_char();
+                    token::Token::new(token::TokenType::Equal, self.ch.to_string() + &'='.to_string())
+                } else {
+                    token::Token::new(token::TokenType::Assign, self.ch.to_string())
+                }
+            }
+            '+' => token::Token::new(token::TokenType::Plus, self.ch.to_string()),
+            '-' => token::Token::new(token::TokenType::Minus, self.ch.to_string()),
+            '!' =>  {
+                if self.peak_character() == '=' {
+                    self.read_char();
+                    token::Token::new(token::TokenType::NotEqual, '!'.to_string() + &self.ch.to_string())
+                } else {
+                    token::Token::new(token::TokenType::Bang, self.ch.to_string())
+                }
+            }
+            '/' => token::Token::new(token::TokenType::Slash, self.ch.to_string()),
+            '*' => token::Token::new(token::TokenType::Asterisk, self.ch.to_string()),
+            '<' => token::Token::new(token::TokenType::LessThan, self.ch.to_string()),
+            '>' => token::Token::new(token::TokenType::GreaterThan, self.ch.to_string()),
             ';' => token::Token::new(token::TokenType::Semicolon, self.ch.to_string()),
             '(' => token::Token::new(token::TokenType::LeftParenthesis, self.ch.to_string()),
             ')' => token::Token::new(token::TokenType::RightParenthesis, self.ch.to_string()),
             ',' => token::Token::new(token::TokenType::Comma, self.ch.to_string()),
-            '+' => token::Token::new(token::TokenType::Plus, self.ch.to_string()),
             '{' => token::Token::new(token::TokenType::LeftBrackets, self.ch.to_string()),
             '}' => token::Token::new(token::TokenType::RightBrackets, self.ch.to_string()),
             '\0' => token::Token::new(token::TokenType::Eof, self.ch.to_string()),
@@ -88,7 +116,7 @@ impl Lexer {
 
         // if we're to call the next character we would loose it
         // because of all the reading done in the read_identifier function
-        if res.token_type == token::TokenType::Ident {
+        if res.token_type == token::TokenType::Ident || res.token_type == token::TokenType::Int {
             return res;
         }
 
