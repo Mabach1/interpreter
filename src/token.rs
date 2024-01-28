@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 #[derive(Debug)]
 pub struct Token {
     pub token_type: TokenType,
@@ -10,11 +12,11 @@ impl Token {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Clone, Copy)]
 pub enum TokenType {
     Illegal,
     Eof,
-    Indent,
+    Ident,
     Int,
     Assign,
     Plus,
@@ -26,4 +28,18 @@ pub enum TokenType {
     RightBrackets,
     Function,
     Let,
+}
+
+impl TokenType {
+    pub fn lookup_indent(ident: &str) -> TokenType {
+        let mut keywords = HashMap::new();
+        keywords.insert("fn", TokenType::Function);
+        keywords.insert("let", TokenType::Let);
+
+        if keywords.contains_key(ident) {
+            return *keywords.get(ident).unwrap();
+        }
+
+        TokenType::Ident
+    }
 }

@@ -1,4 +1,4 @@
-use crate::token::{self, Token};
+use crate::token::{self};
 
 pub struct Lexer {
     input: String,
@@ -31,7 +31,38 @@ impl Lexer {
         self.read_pos += 1;
     }
 
+    fn is_letter(ch: char) -> bool {
+        match ch {
+            'a'..='z' | 'A'..='Z' | '_' => true,
+            _ => false,
+        }
+    }
+
+    fn read_identifier(&mut self) -> String {
+        let position = self.pos;
+        while Lexer::is_letter(self.ch) {
+            self.read_char();
+        }
+        return self.input[position..self.pos].to_string();
+    }
+
+    fn read_number(&mut self) -> String {
+        let position = self.pos;
+        while char::is_digit(self.ch, 10) {
+            self.read_char();
+        }
+        return self.input[position..self.pos].to_string();
+    }
+
+    fn skip_whitespace(&mut self) {
+        while char::is_whitespace(self.ch) {
+            self.read_char();
+        }
+    }
+
     pub fn next_token(&mut self) -> token::Token {
+        self.skip_whitespace();
+
         let res = match self.ch {
             '=' => token::Token::new(token::TokenType::Assign, self.ch.to_string()),
             ';' => token::Token::new(token::TokenType::Semicolon, self.ch.to_string()),
@@ -42,10 +73,27 @@ impl Lexer {
             '{' => token::Token::new(token::TokenType::LeftBrackets, self.ch.to_string()),
             '}' => token::Token::new(token::TokenType::RightBrackets, self.ch.to_string()),
             '\0' => token::Token::new(token::TokenType::Eof, self.ch.to_string()),
-            _ => token::Token::new(token::TokenType::Illegal, String::new()),
+            _ => {
+                if Lexer::is_letter(self.ch) {
+                    let identifier = self.read_identifier();
+                    token::Token::new(token::TokenType::lookup_indent(&identifier), identifier)
+                } else if char::is_digit(self.ch, 10) {
+                    let num_literal = self.read_number();
+                    token::Token::new(token::TokenType::Int, num_literal)
+                } else {
+                    token::Token::new(token::TokenType::Illegal, self.ch.to_string())
+                }
+            }
         };
 
+        // if we're to call the next character we would loose it
+        // because of all the reading done in the read_identifier function
+        if res.token_type == token::TokenType::Ident {
+            return res;
+        }
+
         self.read_char();
+
         return res;
     }
 }
